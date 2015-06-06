@@ -100,8 +100,9 @@ void RecordScene::update()
     //Update Rad and Vel from spectrum
     //Note, the parameters in ofMap's were tuned for best result
     //just for current music track
-    Rad = ofMap( spectrum[ bandRad ], 1, 3, 400, 800, true );
-    Vel = ofMap( spectrum[ bandVel ], 0, 0.1, 0.05, 0.5 );
+//    Rad = ofMap( spectrum[ bandRad ], 1, 3, 400, 800, true );
+    Rad = ofMap( shareData->fft->getAveragePeak(), 0, 1, 400, 800, true );
+    Vel = ofMap( spectrum[ bandVel ], 0, 0.1, 0.05, 0.1 );
     
     //Update particles positions
     for (int j=0; j<n; j++)

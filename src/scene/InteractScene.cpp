@@ -13,12 +13,12 @@ float curAngle;
 
 const int cN = 256;		//Number of bands in spectrum
 float cSpectrum[ cN ];	//Smoothed spectrum values
-float cRad = 1280;		//Cloud raduis parameter
-float cVel = 0.1;		//Cloud points velocity parameter
-int cBandRad = 2;		//Band index in spectrum, affecting Rad value
+float cRad = 500;		//Cloud raduis parameter
+float cVel = 0.01;		//Cloud points velocity parameter
+int cBandRad = 125;		//Band index in spectrum, affecting Rad value
 int cBandVel = 100;		//Band index in spectrum, affecting Vel value
 
-const int cNn = 333;		//Number of cloud points
+const int cNn = 111;		//Number of cloud points
 
 //Offsets for Perlin noise calculation for points
 float cTx[cNn], cTy[cNn];
@@ -194,8 +194,8 @@ void InteractScene::updatePointCloud(){
     //Update Rad and Vel from spectrum
     //Note, the parameters in ofMap's were tuned for best result
     //just for current music track
-    cRad = ofMap( cSpectrum[ cBandRad ], 1, 3, 400, 800, true );
-    cVel = ofMap( cSpectrum[ cBandVel ], 0, 0.1, 0.05, 0.5 );
+    cRad = ofMap( shareData->fft->getAveragePeak(), 0, 1, 400, 800, true );
+    cVel = ofMap( cSpectrum[ cBandVel ], 0, 0.1, 0.01, 0.07 );
     
     //Update particles positions
     for (int j=0; j<cNn; j++)
@@ -227,12 +227,12 @@ void InteractScene::draw()
         
         ofPushStyle();
             ofPushMatrix();
-                ofTranslate(ofGetWidth()*-.333, 0);
+                ofTranslate(ofGetWidth()*-.73, -500);
+                ofScale(2, 2);
                     drawPointCloud();
             ofPopMatrix();
             ofPushMatrix();
-                ofTranslate(0, -300);
-                ofScale(2, 2, 2);
+                ofTranslate(ofGetWidth()*.333, 300);
                     drawPointCloud();
             ofPopMatrix();
         ofPopStyle();
