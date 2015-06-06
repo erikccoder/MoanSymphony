@@ -41,6 +41,8 @@ public:
     void loadVoiceIntoArray(vector<ofPtr<ofSoundPlayer> >& arr, string _path);
     void playAll(vector<ofPtr<ofSoundPlayer> >& arr);
     void stopAll(vector<ofPtr<ofSoundPlayer> >& arr);
+    void updatePointCloud();
+    void drawPointCloud();
     
     ofImage exitbtn;
     ofRectangle exitRect;

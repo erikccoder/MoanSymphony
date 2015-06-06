@@ -15,7 +15,7 @@ float Vel = 0.1;		//Cloud points velocity parameter
 int bandRad = 2;		//Band index in spectrum, affecting Rad value
 int bandVel = 100;		//Band index in spectrum, affecting Vel value
 
-const int n = 300;		//Number of cloud points
+const int n = 333;		//Number of cloud points
 
 //Offsets for Perlin noise calculation for points
 float tx[n], ty[n];

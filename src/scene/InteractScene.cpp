@@ -11,6 +11,20 @@
 
 float curAngle;
 
+const int cN = 256;		//Number of bands in spectrum
+float cSpectrum[ cN ];	//Smoothed spectrum values
+float cRad = 1280;		//Cloud raduis parameter
+float cVel = 0.1;		//Cloud points velocity parameter
+int cBandRad = 2;		//Band index in spectrum, affecting Rad value
+int cBandVel = 100;		//Band index in spectrum, affecting Vel value
+
+const int cNn = 333;		//Number of cloud points
+
+//Offsets for Perlin noise calculation for points
+float cTx[cNn], cTy[cNn];
+ofPoint cP[cNn];			//Cloud's points positions
+
+float cTime0 = 0;		//Time value, used for dt computing
 
 
 void InteractScene::setup()
@@ -52,6 +66,18 @@ void InteractScene::setup()
     
     
     ofSoundSetVolume( 0.2 );
+    
+    //Set spectrum values to 0
+    for (int i=0; i<cN; i++) {
+        cSpectrum[i] = 0.0f;
+    }
+    
+    //Initialize points offsets by random numbers
+    for ( int j=0; j<cNn; j++ ) {
+        cTx[j] = ofRandom( 0, 1000 );
+        cTy[j] = ofRandom( 0, 1000 );
+    }
+
 }
 
 void InteractScene::stopAll(vector<ofPtr<ofSoundPlayer> >& arr)
@@ -130,7 +156,60 @@ void InteractScene::update()
         
         //Update sound engine
         ofSoundUpdate();
+        
+        updatePointCloud();
     }
+}
+
+void InteractScene::updatePointCloud(){
+    
+    shareData->fft->update();
+    
+    //Get current spectrum with N bands
+    //	float *val = ofSoundGetSpectrum( N );
+    float *val = new float[cN];
+    shareData->fft->getFftPeakData(val, cN);
+    
+    //We should not release memory of val,
+    //because it is managed by sound engine
+    
+    //Update our smoothed spectrum,
+    //by slowly decreasing its values and getting maximum with val
+    //So we will have slowly falling peaks in spectrum
+    for ( int i=0; i<cN; i++ ) {
+        cSpectrum[i] *= 0.97;	//Slow decreasing
+        cSpectrum[i] = max( cSpectrum[i], val[i] );
+    }
+    
+    //Update particles using spectrum values
+    
+    //Computing dt as a time between the last
+    //and the current calling of update()
+    float time = ofGetElapsedTimef();	//Get current time
+
+    float dt = time - cTime0;
+    dt = ofClamp( dt, 0.0, 0.1 );
+    cTime0 = time; //Store the current time
+    
+    //Update Rad and Vel from spectrum
+    //Note, the parameters in ofMap's were tuned for best result
+    //just for current music track
+    cRad = ofMap( cSpectrum[ cBandRad ], 1, 3, 400, 800, true );
+    cVel = ofMap( cSpectrum[ cBandVel ], 0, 0.1, 0.05, 0.5 );
+    
+    //Update particles positions
+    for (int j=0; j<cNn; j++)
+    {
+        cTx[j] += cVel * dt;	//move offset
+        cTy[j] += cVel * dt;	//move offset
+        //Calculate Perlin's noise in [-1, 1] and
+        //multiply on Rad
+        cP[j].x = ofSignedNoise( cTx[j] ) * cRad;
+        cP[j].y = ofSignedNoise( cTy[j] ) * cRad;
+    }
+    
+    delete[] val;
+
 }
 
 void InteractScene::draw()
@@ -144,6 +223,20 @@ void InteractScene::draw()
         ofPushStyle();
         
         ofBackground(ofColor::white);
+        
+        
+        ofPushStyle();
+            ofPushMatrix();
+                ofTranslate(ofGetWidth()*-.333, 0);
+                    drawPointCloud();
+            ofPopMatrix();
+            ofPushMatrix();
+                ofTranslate(0, -300);
+                ofScale(2, 2, 2);
+                    drawPointCloud();
+            ofPopMatrix();
+        ofPopStyle();
+        
         
         ofImage& img = shareData->rgImage[shareData->graphicIndex];
         ofRectangle targetRect(0,0, ofGetWidth(), ofGetHeight());
@@ -164,8 +257,40 @@ void InteractScene::draw()
             exitbtn.draw(0,0, exitRect.getWidth(), exitRect.getHeight());
         ofPopMatrix();
         
+
+        
         ofPopStyle();
     }
+}
+
+void InteractScene::drawPointCloud(){
+    //Draw cloud
+    
+    //Move center of coordinate system to the screen center
+    ofPushMatrix();
+    ofTranslate( ofGetWidth() / 2, ofGetHeight() / 2 );
+    
+    //Draw points
+    ofSetColor( 0, 0, 0 );
+    ofFill();
+    for (int i=0; i<cNn; i++) {
+        ofCircle( cP[i], 3 );
+    }
+    
+    //    ofSetColor(ofColor::yellow);
+    //Draw lines between near points
+    float dist = 40;	//Threshold parameter of distance
+    for (int j=0; j<cNn; j++) {
+        for (int k=j+1; k<cNn; k++) {
+            if ( ofDist( cP[j].x, cP[j].y, cP[k].x, cP[k].y )
+                < dist ) {
+                ofLine( cP[j], cP[k] );
+            }
+        }
+    }
+    
+    //Restore coordinate system
+    ofPopMatrix();
 }
 
 //--------------------------------------------------------------
